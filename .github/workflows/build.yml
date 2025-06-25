@@ -40,10 +40,10 @@ jobs:
           make
           ls .
 
-      # - name: Upload artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: win-${{ matrix.arch }}
-      #     path: .libs/gmp.dll
-      #     retention-days: ${{ env.RETENTION }}
-      #     if-no-files-found: error
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-${{ matrix.arch }}
+          path: lib
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
