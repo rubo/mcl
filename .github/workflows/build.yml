@@ -37,7 +37,7 @@ jobs:
           export PATH="/clang64/bin:$PATH"
           mkdir build
           cd build
-          cmake .. -G Ninja -DCMAKE_PREFIX_PATH=/mingw64 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake .. -G Ninja -DCMAKE_PREFIX_PATH=/clang64 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
           ninja
           ls .
 
