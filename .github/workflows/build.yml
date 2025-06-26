@@ -43,7 +43,7 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          ./mklib dll
+          ./mklib.bat dll
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
