@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_PREFIX_PATH=/mingw64 -DCMAKE_CXX_COMPILER=clang++
+          cmake .. -G Ninja -DCMAKE_PREFIX_PATH=/mingw64 
           make
           ls .
 
