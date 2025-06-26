@@ -22,30 +22,32 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # - name: Set up MSYS2
-      #   uses: msys2/setup-msys2@v2
-      #   with:
-      #     update: true
-      #     msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
-      #     install: >-
-      #       base-devel git libtool cmake mingw-w64-x86_64-gmp
-      #       ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
+          install: >-
+            base-devel git libtool cmake mingw-w64-x86_64-gmp
+            ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
 
       - name: Build
-        # shell: msys2 {0}
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          # mkdir build
-          # cd build
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 
-          cmake --build build --config Release
-          #make
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_PREFIX_PATH=/mingw64 -DCMAKE_CXX_COMPILER=clang++
+          make
           ls .
 
       # - name: Build
-      #   #shell: msys2 {0}
+      #   shell: pwsh
       #   run: |
-      #     ./mklib.bat dll
+      #     # mkdir build
+      #     # cd build
+      #     cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+      #     cmake --build build --config Release
+      #     ls .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
