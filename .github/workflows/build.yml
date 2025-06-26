@@ -28,7 +28,7 @@ jobs:
           update: true
           msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
           install: >-
-            base-devel git libtool cmake mingw-w64-x86_64-gmp mingw-w64-clang-x86_64-ninja mingw-w64-x86_64-gcc
+            base-devel git libtool mingw-w64-clang-x86_64-cmake mingw-w64-x86_64-gmp mingw-w64-clang-x86_64-ninja mingw-w64-x86_64-gcc
             ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
 
       - name: Build
