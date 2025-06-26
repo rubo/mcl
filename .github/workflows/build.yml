@@ -22,14 +22,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # - name: Set up MSYS2
-      #   uses: msys2/setup-msys2@v2
-      #   with:
-      #     update: true
-      #     msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
-      #     install: >-
-      #       base-devel git libtool cmake mingw-w64-x86_64-gmp
-      #       ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
+          install: >-
+            base-devel git libtool cmake mingw-w64-x86_64-gmp
+            ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
 
       # - name: Build
       #   shell: msys2 {0}
@@ -41,6 +41,7 @@ jobs:
       #     ls .
 
       - name: Build
+        shell: msys2 {0}
         run: |
           ./mklib dll
 
