@@ -41,7 +41,7 @@ jobs:
       #     ls .
 
       - name: Build
-        shell: msys2 {0}
+        #shell: msys2 {0}
         run: |
           ./mklib.bat dll
 
