@@ -25,6 +25,20 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
+          # Find ML64.exe location
+          $ml64Path = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio" -Filter "ml64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($ml64Path) {
+            Write-Host "Found ML64 at: $($ml64Path.FullName)"
+            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+          } else {
+            Write-Host "ML64 not found, searching in Windows SDK..."
+            $ml64Path = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Filter "ml64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($ml64Path) {
+              Write-Host "Found ML64 in Windows SDK at: $($ml64Path.FullName)"
+              $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+            }
+          }
+          
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DMCL_MSM=0
           cmake --build build --config Release
           ls build\Release
