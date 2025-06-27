@@ -37,9 +37,12 @@ jobs:
           export PATH="/clang64/bin:$PATH"
           mkdir build
           cd build
+          echo "System info:"
+          uname -m
+          echo "CMAKE_SYSTEM_PROCESSOR will be: $(uname -m)"
           cmake .. -G Ninja -DCMAKE_PREFIX_PATH=/clang64 \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_MAKE_PROGRAM=/clang64/bin/ninja \
-            -DCMAKE_ASM_COMPILER=clang -DCMAKE_SYSTEM_NAME=MSYS
+            -DCMAKE_ASM_COMPILER=clang -DCMAKE_SYSTEM_NAME=MSYS -DCMAKE_SYSTEM_PROCESSOR=x86_64
           ninja
           ls .
 
