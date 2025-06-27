@@ -39,7 +39,7 @@ jobs:
           cd build
           cmake .. -G Ninja -DCMAKE_PREFIX_PATH=/clang64 \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_MAKE_PROGRAM=/clang64/bin/ninja \
-            -DCMAKE_ASM_COMPILER=clang -DCMAKE_ASM_NASM_COMPILER=nasm
+            -DCMAKE_ASM_COMPILER=clang -DCMAKE_SYSTEM_NAME=MSYS
           ninja
           ls .
 
