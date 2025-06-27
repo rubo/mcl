@@ -25,23 +25,54 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          # Find ML64.exe location
-          $ml64Path = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio" -Filter "ml64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($ml64Path) {
-            Write-Host "Found ML64 at: $($ml64Path.FullName)"
-            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+          # Setup Visual Studio environment
+          $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
+          if (Test-Path $vsPath) {
+            Write-Host "Using Visual Studio Enterprise"
           } else {
-            Write-Host "ML64 not found, searching in Windows SDK..."
-            $ml64Path = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits" -Filter "ml64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            $vsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools"
+            Write-Host "Using Visual Studio Build Tools"
+          }
+          
+          # Find ML64.exe location more specifically
+          $ml64Paths = @(
+            "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\ml64.exe"
+          )
+          
+          $ml64Found = $false
+          foreach ($pattern in $ml64Paths) {
+            $ml64Path = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($ml64Path) {
-              Write-Host "Found ML64 in Windows SDK at: $($ml64Path.FullName)"
+              Write-Host "Found ML64 at: $($ml64Path.FullName)"
               $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+              $ml64Found = $true
+              break
             }
           }
           
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DMCL_MSM=0
+          if (-not $ml64Found) {
+            Write-Host "ML64 not found, trying alternative approach..."
+            # Try to use the Developer Command Prompt environment
+            $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
+            if (Test-Path $vcvarsPath) {
+              Write-Host "Setting up Visual Studio environment..."
+              cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
+                if ($_ -match '^([^=]+)=(.*)') {
+                  [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+                }
+              }
+            }
+          }
+          
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_FLAGS="/DMCL_MSM=0" -DCMAKE_C_FLAGS="/DMCL_MSM=0"
           cmake --build build --config Release
-          ls build\Release
+          if (Test-Path "build\Release") {
+            ls build\Release
+          } else {
+            Write-Host "Release folder not found, listing build contents:"
+            ls build -Recurse -File | Where-Object { $_.Name -like "*.dll" -or $_.Name -like "*.lib" -or $_.Name -like "*.exe" }
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
