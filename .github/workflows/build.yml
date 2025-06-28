@@ -28,14 +28,19 @@ jobs:
           $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
 
           # Find ML64.exe location more specifically
-          $ml64Paths = "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe"
+          $ml64Paths = @(
+            "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe"
+          )
 
           $ml64Found = $false
-          $ml64Path = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
-          if ($ml64Path) {
-            Write-Host "Found ML64 at: $($ml64Path.FullName)"
-            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
-            $ml64Found = $true
+          foreach ($pattern in $ml64Paths) {
+            $ml64Path = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
+            if ($ml64Path) {
+              Write-Host "Found ML64 at: $($ml64Path.FullName)"
+              $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+              $ml64Found = $true
+              break
+            }
           }
 
           if (-not $ml64Found) {
