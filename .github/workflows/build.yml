@@ -36,7 +36,6 @@ jobs:
             Write-Host "Found ML64 at: $($ml64Path.FullName)"
             $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
             $ml64Found = $true
-            break
           }
 
           if (-not $ml64Found) {
