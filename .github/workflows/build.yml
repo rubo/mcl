@@ -29,10 +29,11 @@ jobs:
           $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
 
           if ($ml64Path) {
+            Write-Host "Found MASM: $ml64Path"
             $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
           }
 
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_FLAGS="/DMCL_MSM=0" -DCMAKE_C_FLAGS="/DMCL_MSM=0"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 
           cmake --build build --config Release
 
       - name: Upload artifact
