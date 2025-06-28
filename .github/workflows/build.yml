@@ -25,41 +25,47 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          # Assume $vsPath is defined (e.g., path to Visual Studio root)
-          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"  # Adjust as needed
-
-          # Define the base path up to the wildcard segment
-          $basePath = Join-Path -Path $vsPath -ChildPath "VC\Tools\MSVC"
-
-          # Get all directories under MSVC (version folders)
-          $versionDirs = Get-ChildItem -Path $basePath -Directory
-
-          # Parse and sort by version
-          $latestVersionDir = $versionDirs |
-              Where-Object { $_.Name -match '^\d+(\.\d+)+$' } |
-              Sort-Object { [Version]$_.Name } -Descending |
-              Select-Object -First 1
-
-          # Build the full path to ml64.exe
-          if ($latestVersionDir) {
-              $ml64Path = Join-Path -Path $latestVersionDir.FullName -ChildPath "bin\Hostx64\x64\ml64.exe"
-              
-              if (Test-Path $ml64Path) {
-                  Write-Output "Latest ml64.exe found at:"
-                  Write-Output $ml64Path
-
-                  $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
-
-              } else {
-                  Write-Warning "ml64.exe not found in the latest version directory."
-              }
+          # Setup Visual Studio environment
+          $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
+          if (Test-Path $vsPath) {
+            Write-Host "Using Visual Studio Enterprise"
           } else {
-              Write-Warning "No valid MSVC version directories found."
+            $vsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools"
+            Write-Host "Using Visual Studio Build Tools"
           }
 
+          # Find ML64.exe location more specifically
+          $ml64Paths = @(
+            "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe",
+            "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\ml64.exe"
+          )
 
+          $ml64Found = $false
+          foreach ($pattern in $ml64Paths) {
+            $ml64Path = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
+            if ($ml64Path) {
+              Write-Host "Found ML64 at: $($ml64Path.FullName)"
+              $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+              $ml64Found = $true
+              break
+            }
+          }
 
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DMCL_MSM=OFF
+          if (-not $ml64Found) {
+            Write-Host "ML64 not found, trying alternative approach..."
+            # Try to use the Developer Command Prompt environment
+            $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
+            if (Test-Path $vcvarsPath) {
+              Write-Host "Setting up Visual Studio environment..."
+              cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
+                if ($_ -match '^([^=]+)=(.*)') {
+                  [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+                }
+              }
+            }
+          }
+
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_FLAGS="/DMCL_MSM=0" -DCMAKE_C_FLAGS="/DMCL_MSM=0"
           cmake --build build --config Release
           if (Test-Path "build\Release") {
             ls build\Release
