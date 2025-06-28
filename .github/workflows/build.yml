@@ -28,34 +28,20 @@ jobs:
           $vsPath = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
 
           # Find ML64.exe location more specifically
-          $ml64Paths = @(
-            "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe"
-          )
+          $ml64Paths = "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\ml64.exe"
 
           $ml64Found = $false
-          foreach ($pattern in $ml64Paths) {
-            $ml64Path = Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
+
+            $ml64Path = Get-ChildItem -Path $ml64Paths -ErrorAction SilentlyContinue | Select-Object -Last 1
             if ($ml64Path) {
               Write-Host "Found ML64 at: $($ml64Path.FullName)"
               $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
               $ml64Found = $true
               break
             }
-          }
 
-          if (-not $ml64Found) {
-            Write-Host "ML64 not found, trying alternative approach..."
-            # Try to use the Developer Command Prompt environment
-            $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
-            if (Test-Path $vcvarsPath) {
-              Write-Host "Setting up Visual Studio environment..."
-              cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
-                if ($_ -match '^([^=]+)=(.*)') {
-                  [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
-                }
-              }
-            }
-          }
+
+
 
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_FLAGS="/DMCL_MSM=0" -DCMAKE_C_FLAGS="/DMCL_MSM=0"
           cmake --build build --config Release
