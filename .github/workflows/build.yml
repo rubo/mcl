@@ -117,9 +117,8 @@ jobs:
         shell: pwsh
         run: |
 
-
-          cmake -A ARM64 -DCMAKE_SYSTEM_PROCESSOR=ARM64 ..
-          cmake --build . --config Release
+          cmake -S . -B build -A ARM64 -DCMAKE_SYSTEM_PROCESSOR=ARM64 
+          cmake --build build --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
