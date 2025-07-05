@@ -119,7 +119,7 @@ jobs:
           update: true
           msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
           install: >-
-            autoconf automake base-devel cmake git libtool gmpmingw-w64-clang-aarch64-gmp
+            autoconf automake base-devel cmake git libtool gmp
             ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
 
       - name: Build
