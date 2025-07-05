@@ -25,7 +25,7 @@ jobs:
           cd build
           cmake .. ${{ matrix.arch == 'arm64' && '-DCMAKE_CXX_COMPILER=clang++' || '' }}
           make -j$(nproc)
-          strip libmcl.so
+          strip lib/libmcl.so
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
