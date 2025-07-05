@@ -128,7 +128,7 @@ jobs:
           export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
           mkdir build
           cd build
-          cmake .. ${{ matrix.arch == 'arm64' && '-DCMAKE_CXX_COMPILER=clang++' || '' }}
+          cmake .. -DCMAKE_CXX_COMPILER=clang++ -DMCL_USE_GMP=0
           make -j$(nproc)
 
       - name: Upload artifact
