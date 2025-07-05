@@ -13,7 +13,7 @@ jobs:
     name: Linux build
     strategy:
       matrix:
-        arch: [x64]
+        arch: [arm64, x64]
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
     steps:
       - name: Check out repository
@@ -25,12 +25,13 @@ jobs:
           cd build
           cmake ..
           make -j$(nproc)
+          strip libmcl.so
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
-          path: build
+          path: build/lib/libmcl.so
           retention-days: ${{ env.RETENTION }}
           if-no-files-found: error
 
