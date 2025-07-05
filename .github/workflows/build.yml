@@ -9,7 +9,33 @@ env:
   RETENTION: 7
 
 jobs:
+  build-linux:
+    name: Linux build
+    strategy:
+      matrix:
+        arch: [x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make -j$(nproc)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: build
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
   build-windows:
+    if: false
     name: Windows build
     strategy:
       matrix:
