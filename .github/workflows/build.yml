@@ -126,7 +126,7 @@ jobs:
             $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
           }
             
-          cmake -S . -B build -A ARM64 -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_GENERATOR_PLATFORM=ARM64
+          cmake -S . -B build -A ARM64 -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DMCL_USE_XBYAK=0 -DMCL_USE_LLVM=0 -DMCL_BINT_ASM_X64=0 -DMCL_MSM=0
           cmake --build build --config Release
 
       - name: Upload artifact
