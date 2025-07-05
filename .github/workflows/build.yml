@@ -19,11 +19,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # - name: Install build tools
-      #   run: |
-      #     brew install automake texinfo \
-      #       ${{ matrix.arch == 'arm64' && 'autoconf libtool' || '' }}
-
       - name: Build
         run: |
           mkdir build
@@ -36,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: osx-${{ matrix.arch }}
-          path: .libs/libgmp.dylib
+          path: build/lib/libmcl.dylib
           retention-days: ${{ env.RETENTION }}
           if-no-files-found: error
 
