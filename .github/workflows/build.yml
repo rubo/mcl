@@ -116,6 +116,13 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
+          $ml64Pattern = "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/**/ml64.exe"
+          $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
+
+          if ($ml64Path) {
+            Write-Host "Found MASM: $ml64Path"
+            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+          }
 
           cmake -S . -B build -A ARM64 -DCMAKE_SYSTEM_PROCESSOR=ARM64 
           cmake --build build --config Release
