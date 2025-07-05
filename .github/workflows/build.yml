@@ -126,7 +126,7 @@ jobs:
             $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
           }
             
-          cmake --G "Ninja" -T ClangCL -A ARM64
+          cmake -G "Ninja" -T ClangCL -A ARM64
           ninja
 
       - name: Upload artifact
