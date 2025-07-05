@@ -112,22 +112,24 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@v4
-      - uses: seanmiddleditch/gha-setup-ninja@v3
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
+          install: >-
+            autoconf automake base-devel git libtool
+            ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
+
       - name: Build
-        shell: pwsh
+        shell: msys2 {0}
         run: |
-          $ml64Pattern = "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*/bin/Hostarm64/arm64/ml64.exe"
-          $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
-
-          Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue
-
-          if ($ml64Path) {
-            Write-Host "Found MASM: $ml64Path"
-            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
-          }
-            
-          cmake -G "Ninja" -T ClangCL -A ARM64
-          ninja
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          mkdir build
+          cd build
+          cmake .. ${{ matrix.arch == 'arm64' && '-DCMAKE_CXX_COMPILER=clang++' || '' }}
+          make -j$(nproc)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
