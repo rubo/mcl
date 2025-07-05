@@ -112,11 +112,10 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@v4
-
+      - uses: seanmiddleditch/gha-setup-ninja@v3
       - name: Build
         shell: pwsh
         run: |
-          winget install Ninja-build.Ninja
           $ml64Pattern = "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*/bin/Hostarm64/arm64/ml64.exe"
           $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
 
