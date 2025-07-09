@@ -13,7 +13,7 @@
 #include <stdio.h>
 #endif
 
-#if defined(__EMSCRIPTEN__) || defined(__wasm__)
+#if defined(__EMSCRIPTEN__) || defined(__wasm__) || defined(_M_ARM64)
 	#define MCL_DONT_USE_XBYAK
 #endif
 #if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8) && !defined(MCL_STATIC_CODE)

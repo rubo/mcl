@@ -102,8 +102,20 @@ msbuild mcl.sln /p:Configuration=Release /m
 ```
 
 # For ARM64 Windows
+Open command prompt and run
+```
+"\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
+```
+- Change the path according your system.
 
 Install clang-cl.exe.
+
+```
+clang++ --target=arm64-pc-windows src/fp.cpp src/base64.ll src/bint64.ll test/bls12_test.cpp -I include -I src -DMCL_MSM=0 -o bls12_test.exe
+./bls12_test.exe
+```
+
+# The following command does not run well yet.
 ```
 mkdir build
 cd build
