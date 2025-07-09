@@ -1,0 +1,140 @@
+name: Build
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+env:
+  RETENTION: 7
+
+jobs:
+  build-macos:
+    if: false
+    name: macOS build
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'macos-latest' || 'macos-13' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. ${{ matrix.arch == 'arm64' && '-DCMAKE_CXX_COMPILER=clang++' || '' }}
+          make -j$(nproc)
+          strip -x lib/libmcl.dylib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osx-${{ matrix.arch }}
+          path: build/lib/libmcl.dylib
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  build-linux:
+    if: false
+    name: Linux build
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. ${{ matrix.arch == 'arm64' && '-DCMAKE_CXX_COMPILER=clang++' || '' }}
+          make -j$(nproc)
+          strip lib/libmcl.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: build/lib/libmcl.so
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  build-windows:
+    if: true
+    name: Windows build
+    strategy:
+      matrix:
+        arch: [x64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
+    steps:
+      - name: Disable line ending conversion
+        run: git config --global core.autocrlf input
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $ml64Pattern = "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*/bin/Hostx64/x64/ml64.exe"
+          $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
+
+          if ($ml64Path) {
+            Write-Host "Found MASM: $ml64Path"
+            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+          }
+
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 
+          cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-${{ matrix.arch }}
+          path: build/bin/release/*.dll
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
+
+  build-windowsarm64:
+    if: false
+    name: Windows build
+    strategy:
+      matrix:
+        arch: [arm64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
+    steps:
+      - name: Disable line ending conversion
+        run: git config --global core.autocrlf input
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          msystem: ${{ matrix.arch == 'arm64' && 'clangarm64' || 'clang64' }}
+          install: >-
+            autoconf automake base-devel cmake git libtool gmp
+            ${{ matrix.arch == 'arm64' && 'mingw-w64-clang-aarch64-toolchain' || 'mingw-w64-clang-x86_64-toolchain' }}
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          export SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_CXX_COMPILER=clang++ -DMCL_USE_GMP=0
+          make -j$(nproc)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-${{ matrix.arch }}
+          path: build/bin/release/*.dll
+          retention-days: ${{ env.RETENTION }}
+          if-no-files-found: error
