@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-macos:
-    if: false
+    #if: false
     name: macOS build
     strategy:
       matrix:
@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
-    if: false
+    #if: false
     name: Linux build
     strategy:
       matrix:
