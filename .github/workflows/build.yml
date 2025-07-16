@@ -24,7 +24,7 @@ jobs:
         run: |
 
 
-          cmake -S . -B build -G Ninja -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DMCL_MSM=OFF -DCMAKE_CXX_COMPILER=clang++ -DMCL_TEST_WITH_GMP_DEFAULT=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DMCL_MSM=OFF -DCMAKE_CXX_COMPILER=clang++ -DMCL_TEST_WITH_GMP_DEFAULT=OFF -DMCL_USE_GMP=OFF
           cmake --build build --config Release
       # - name: Upload artifact
       #   uses: actions/upload-artifact@v4
