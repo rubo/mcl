@@ -22,11 +22,11 @@ jobs:
       - name: Build
         shell: cmd
         run: |
+
+
           "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsamd64_arm64.bat" ^
-          && cmake -S . -B build -G "NMake Makefiles" -DCMAKE_SYSTEM_PROCESSOR=ARM64 -DMCL_MSM=OFF ^
-           -DCMAKE_C_FLAGS="--target=arm64-windows" ^
-            -DCMAKE_CXX_FLAGS="--target=arm64-windows" ^
-          && cmake --build build --config Release
+          && clang++ --target=arm64-pc-windows src\fp.cpp src\base64.ll src\bint64.ll test\bls12_test.cpp -I include -I src -DMCL_MSM=0 -o bls12_test.exe
+          && bls12_test.exe
       # - name: Upload artifact
       #   uses: actions/upload-artifact@v4
       #   with:
