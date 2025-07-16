@@ -25,7 +25,7 @@ jobs:
           $vsInstaller = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
 
           # Install Clang tools for MSVC (ID: Microsoft.VisualStudio.Component.VC.Llvm.Clang)
-          & $vsInstaller modify --quiet --norestart `
+          & $vsInstaller modify  --norestart `
             --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" `
             --add Microsoft.VisualStudio.Component.VC.Llvm.Clang
 
