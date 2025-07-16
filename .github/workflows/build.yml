@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        shell: cmd
+        #shell: cmd
         run: |
           cmake -S . -B build -G "NMake Makefiles" `
           -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang.exe" `
