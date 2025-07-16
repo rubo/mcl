@@ -8,6 +8,9 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
+
 set(MCL_FP_BIT 384 CACHE STRING "max bit size for Fp")
 set(MCL_FR_BIT 256 CACHE STRING "max bit size for Fr")
 
