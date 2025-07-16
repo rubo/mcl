@@ -8,9 +8,6 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
-
 set(MCL_FP_BIT 384 CACHE STRING "max bit size for Fp")
 set(MCL_FR_BIT 256 CACHE STRING "max bit size for Fr")
 
@@ -171,9 +168,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 else()
-	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ..")
-	endif()
+	
 	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 	message("bint_obj=" ${BINT_OBJ})
 	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
