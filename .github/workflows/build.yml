@@ -35,15 +35,8 @@ jobs:
 
 
           "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsamd64_arm64.bat" ^
-          && cmake -S . -B build -G "Ninja" ^
-          -DCMAKE_SYSTEM_NAME=Windows ^
-          -DCMAKE_SYSTEM_PROCESSOR=ARM64 ^
-          -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang.exe" ^
-          -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang++.exe" ^
-          -DCMAKE_LINKER="C:/Program Files/LLVM/bin/lld-link.exe" ^
-          -DCMAKE_C_FLAGS="--target=arm64-windows -fuse-ld=lld" ^
-          -DCMAKE_CXX_FLAGS="--target=arm64-windows -fuse-ld=lld" ^
-          -DCMAKE_EXE_LINKER_FLAGS="/subsystem:console"
+          && cmake -S . -B build -G "Visual Studio 17 2022" -A arm64 -DMCL_MSM=OFF -DCMAKE_CXX_COMPILER=clang-cl ^
+          && cmake --build build --config Release
       # - name: Upload artifact
       #   uses: actions/upload-artifact@v4
       #   with:
