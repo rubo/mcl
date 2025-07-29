@@ -13,7 +13,7 @@ jobs:
     name: Windows build
     strategy:
       matrix:
-        arch: [x64]
+        arch: [arm64]
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     steps:
       - name: Check out repository
@@ -21,15 +21,23 @@ jobs:
 
       - name: Build
         run: |
+          $ml64Pattern = "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/*/bin/Hostarm64/arm64/ml64.exe"
+          $ml64Path = Get-ChildItem -Path $ml64Pattern -ErrorAction SilentlyContinue | Sort-Object | Select-Object -Last 1
 
-          "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsx64.bat"
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SHARED_LINKER_FLAGS="/Brepro"
+          if ($ml64Path) {
+            Write-Host "Found MASM: $ml64Path"
+            $env:PATH = "$($ml64Path.Directory.FullName);$env:PATH"
+          } else {
+            Write-Error "MASM not found"
+          }
+          & "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsarm64.bat"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A arm64 -DCMAKE_SHARED_LINKER_FLAGS="/Brepro"
           cmake --build build --config Release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: win-${{ matrix.arch }}
-          path: bin/mcl.dll
+          path: build/bin/Release/mcl.dll
           retention-days: ${{ env.RETENTION }}
           if-no-files-found: error

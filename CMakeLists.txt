@@ -167,6 +167,33 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
+	# ARM64 Windows - use LLVM without assembly, allow MSVC
+	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
+	message("bint_obj=" ${BINT_OBJ})
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		add_custom_command(OUTPUT ${BINT_OBJ}
+			COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	else()
+		# For MSVC on ARM64, skip LLVM compilation and use fallback
+		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=0)
+		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=0)
+		set(BINT_OBJ "")
+	endif()
+	
+	if(BINT_OBJ)
+		add_custom_target(gen_bint.o
+			SOURCES ${BINT_OBJ})
+		target_link_libraries(mcl PUBLIC ${BINT_OBJ})
+		add_dependencies(mcl gen_bint.o)
+		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
+		add_dependencies(mcl_st gen_bint.o)
+		target_sources(mcl_st PRIVATE ${BINT_OBJ})
+	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ..")
@@ -198,6 +225,28 @@ endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
+	# ARM64 Windows - use LLVM if available, skip otherwise
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ${MCL_USE_LLVM})
+		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+		message("base_obj=" ${BASE_OBJ})
+		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+
+		add_custom_command(OUTPUT ${BASE_OBJ}
+			COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+		add_custom_target(gen_base.o
+			SOURCES ${BASE_OBJ})
+		target_link_libraries(mcl PUBLIC ${BASE_OBJ})
+		add_dependencies(mcl gen_base.o)
+		target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
+		add_dependencies(mcl_st gen_base.o)
+		target_sources(mcl_st PRIVATE ${BASE_OBJ})
+	else()
+		# For MSVC on ARM64, skip LLVM and use fallback
+		message("Skipping LLVM base compilation for ARM64 Windows with MSVC")
+	endif()
 elseif(X86_64_LINUX)
 	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
