@@ -177,7 +177,22 @@ target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
 
 # use bint-x64 on x64, bint${BIT}.ll on the other CPU
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
-	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
+	# Find ML64 assembler dynamically without hardcoded paths
+	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
+	find_program(ML64 ml64.exe 
+		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/MSVC/*/bin/Hostx64/x64"
+		DOC "path to assembler")
+	
+	if(NOT ML64)
+		message(FATAL_ERROR "ML64 assembler not found. Please ensure Visual Studio with MSVC tools is installed.")
+	endif()
+	
+	message("Found ML64 assembler: ${ML64}")
 	set(BINT_X64_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj")
 	add_custom_command(OUTPUT ${BINT_X64_OBJ}
 		COMMAND ${ML64} /c /Fo ${BINT_X64_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
