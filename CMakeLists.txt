@@ -182,14 +182,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	if(VS_CLANG)
 		message("Found VS Clang for ARM64: ${VS_CLANG}")
 		
-		# Compile LLVM files with Clang
+		# Compile LLVM files with Clang (following mklib_arm64.bat approach)
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 		
-		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
-		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+		# Don't set MCL_USE_LLVM or MCL_BINT_ASM_X64 - let defaults handle it
+		# This matches mklib_arm64.bat which compiles without these definitions
 		
 		add_custom_command(OUTPUT ${BINT_OBJ}
 			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG
