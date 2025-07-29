@@ -97,6 +97,9 @@ if(ARM64_WINDOWS_CLANG)
 	# For ARM64 Windows with Clang, create empty targets and add objects later
 	add_library(mcl SHARED)
 	add_library(mcl_st STATIC)
+	# Set the linker language explicitly since we have no initial sources
+	set_target_properties(mcl PROPERTIES LINKER_LANGUAGE CXX)
+	set_target_properties(mcl_st PROPERTIES LINKER_LANGUAGE CXX)
 else()
 	# For other platforms, create targets with normal sources
 	add_library(mcl SHARED src/fp.cpp)
