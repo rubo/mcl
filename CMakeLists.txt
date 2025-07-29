@@ -76,7 +76,33 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_library(mcl SHARED src/fp.cpp)
+# Check if we need special ARM64 Windows handling first
+set(ARM64_WINDOWS_CLANG FALSE)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
+	find_program(VS_CLANG clang++.exe 
+		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/ARM64/bin"
+		NO_DEFAULT_PATH)
+	if(VS_CLANG)
+		set(ARM64_WINDOWS_CLANG TRUE)
+		message("Found VS Clang for ARM64: ${VS_CLANG}")
+	endif()
+endif()
+
+if(ARM64_WINDOWS_CLANG)
+	# For ARM64 Windows with Clang, create empty targets and add objects later
+	add_library(mcl SHARED)
+	add_library(mcl_st STATIC)
+else()
+	# For other platforms, create targets with normal sources
+	add_library(mcl SHARED src/fp.cpp)
+	add_library(mcl_st STATIC src/fp.cpp)
+endif()
+
 add_library(mcl::mcl ALIAS mcl)
 target_include_directories(mcl PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -90,7 +116,6 @@ set_target_properties(mcl PROPERTIES
 # For semantics of ABI compatibility including when you must bump SOVERSION, see:
 # https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
 
-add_library(mcl_st STATIC src/fp.cpp)
 add_library(mcl::mcl_st ALIAS mcl_st)
 target_include_directories(mcl_st PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -169,19 +194,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	# ARM64 Windows - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
-	# Find the Visual Studio Clang for ARM64
-	find_program(VS_CLANG clang++.exe 
-		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/ARM64/bin"
-		NO_DEFAULT_PATH)
-	
-	if(VS_CLANG)
-		message("Found VS Clang for ARM64: ${VS_CLANG}")
-		
+	if(ARM64_WINDOWS_CLANG)
 		# Use Clang for ALL compilation on ARM64 Windows (exactly like mklib_arm64.bat)
 		
 		# Compile LLVM files with Clang
@@ -210,15 +223,14 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		add_custom_target(gen_base.o SOURCES ${BASE_OBJ})
 		add_custom_target(gen_fp.o SOURCES ${FP_OBJ})
 		
-		# Remove the original C++ sources and use our compiled objects
-		set_target_properties(mcl PROPERTIES SOURCES "")
-		set_target_properties(mcl_st PROPERTIES SOURCES "")
+		# Add the compiled objects as sources to the targets
+		target_sources(mcl PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
+		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		
 		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl gen_bint.o gen_base.o gen_fp.o)
 		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
-		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		
 		# Find and link Clang runtime library for ARM64
 		file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
