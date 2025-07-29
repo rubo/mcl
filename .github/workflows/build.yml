@@ -30,6 +30,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: win-${{ matrix.arch }}
-          path: build
+          path: bin
           retention-days: ${{ env.RETENTION }}
           if-no-files-found: error
