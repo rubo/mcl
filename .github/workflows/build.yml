@@ -13,7 +13,7 @@ jobs:
     name: Windows build
     strategy:
       matrix:
-        arch: [arm64]
+        arch: [x64]
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     steps:
       - name: Check out repository
