@@ -168,31 +168,72 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# ARM64 Windows - use LLVM without assembly, allow MSVC
-	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
-	message("bint_obj=" ${BINT_OBJ})
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
-
-	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	# ARM64 Windows - use Clang from Visual Studio for LLVM compilation
+	# Find the Visual Studio Clang for ARM64
+	find_program(VS_CLANG clang++.exe 
+		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/ARM64/bin"
+		NO_DEFAULT_PATH)
+	
+	if(VS_CLANG)
+		message("Found VS Clang for ARM64: ${VS_CLANG}")
+		
+		# Compile LLVM files with Clang
+		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
+		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+		
+		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
+		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+		
 		add_custom_command(OUTPUT ${BINT_OBJ}
-			COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+		
+		add_custom_command(OUTPUT ${BASE_OBJ}
+			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+		
+		add_custom_target(gen_bint.o SOURCES ${BINT_OBJ})
+		add_custom_target(gen_base.o SOURCES ${BASE_OBJ})
+		
+		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ})
+		add_dependencies(mcl gen_bint.o gen_base.o)
+		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ})
+		add_dependencies(mcl_st gen_bint.o gen_base.o)
+		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ})
+		
+		# Find and link Clang runtime library for ARM64
+		file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
+		if(NOT VS_CLANG_RT_DIR)
+			file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
+		endif()
+		if(NOT VS_CLANG_RT_DIR)
+			file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
+		endif()
+		
+		if(VS_CLANG_RT_DIR)
+			list(GET VS_CLANG_RT_DIR 0 CLANG_RT_PATH)
+			message("Found Clang RT path: ${CLANG_RT_PATH}")
+			find_library(CLANG_RT_LIB clang_rt.builtins-aarch64 PATHS ${CLANG_RT_PATH} NO_DEFAULT_PATH)
+			if(CLANG_RT_LIB)
+				message("Found Clang RT library: ${CLANG_RT_LIB}")
+				target_link_libraries(mcl PUBLIC ${CLANG_RT_LIB})
+				target_link_libraries(mcl_st PUBLIC ${CLANG_RT_LIB})
+			endif()
+		endif()
 	else()
-		# For MSVC on ARM64, skip LLVM compilation and use fallback
+		message(WARNING "Visual Studio Clang for ARM64 not found, falling back to pure C++ implementation")
+		# For MSVC on ARM64 without Clang, use fallback
 		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=0)
 		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=0)
-		set(BINT_OBJ "")
-	endif()
-	
-	if(BINT_OBJ)
-		add_custom_target(gen_bint.o
-			SOURCES ${BINT_OBJ})
-		target_link_libraries(mcl PUBLIC ${BINT_OBJ})
-		add_dependencies(mcl gen_bint.o)
-		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
-		add_dependencies(mcl_st gen_bint.o)
-		target_sources(mcl_st PRIVATE ${BINT_OBJ})
+		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
+		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -226,27 +267,8 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# ARM64 Windows - use LLVM if available, skip otherwise
-	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ${MCL_USE_LLVM})
-		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
-		message("base_obj=" ${BASE_OBJ})
-		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-
-		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-		add_custom_target(gen_base.o
-			SOURCES ${BASE_OBJ})
-		target_link_libraries(mcl PUBLIC ${BASE_OBJ})
-		add_dependencies(mcl gen_base.o)
-		target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
-		add_dependencies(mcl_st gen_base.o)
-		target_sources(mcl_st PRIVATE ${BASE_OBJ})
-	else()
-		# For MSVC on ARM64, skip LLVM and use fallback
-		message("Skipping LLVM base compilation for ARM64 Windows with MSVC")
-	endif()
+	# ARM64 Windows base compilation is handled above with bint compilation
+	message("ARM64 Windows base compilation handled with bint compilation")
 elseif(X86_64_LINUX)
 	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
