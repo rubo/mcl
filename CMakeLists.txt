@@ -79,11 +79,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Check if we need special ARM64 Windows handling first
 set(ARM64_WINDOWS_CLANG FALSE)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
+	# Find Visual Studio installation dynamically
+	# Handle Program Files and Program Files (x86) paths
+	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
 	find_program(VS_CLANG clang++.exe 
-		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/ARM64/bin"
-		NO_DEFAULT_PATH)
+		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
+		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin")
 	if(VS_CLANG)
 		set(ARM64_WINDOWS_CLANG TRUE)
 		message("Found VS Clang for ARM64: ${VS_CLANG}")
@@ -226,17 +231,18 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
 		
-		# Find and link Clang runtime library for ARM64
-		file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
-		if(NOT VS_CLANG_RT_DIR)
-			file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
-		endif()
-		if(NOT VS_CLANG_RT_DIR)
-			file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
-		endif()
+		# Find and link Clang runtime library for ARM64 - search dynamically for any VS version
+		set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
+		file(GLOB VS_CLANG_RT_DIRS 
+			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
+			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
+			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
+			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
+			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
+			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
 		
-		if(VS_CLANG_RT_DIR)
-			list(GET VS_CLANG_RT_DIR 0 CLANG_RT_PATH)
+		if(VS_CLANG_RT_DIRS)
+			list(GET VS_CLANG_RT_DIRS 0 CLANG_RT_PATH)
 			message("Found Clang RT path: ${CLANG_RT_PATH}")
 			find_library(CLANG_RT_LIB clang_rt.builtins-aarch64 PATHS ${CLANG_RT_PATH} NO_DEFAULT_PATH)
 			if(CLANG_RT_LIB)
