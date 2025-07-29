@@ -254,6 +254,18 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 				target_link_libraries(mcl_st PUBLIC ${CLANG_RT_LIB})
 			endif()
 		endif()
+		
+		# Add necessary Windows system libraries for ARM64 Clang builds
+		target_link_libraries(mcl PUBLIC 
+			kernel32.lib 
+			msvcrt.lib
+			vcruntime.lib
+			ucrt.lib)
+		target_link_libraries(mcl_st PUBLIC 
+			kernel32.lib 
+			libcmt.lib
+			libvcruntime.lib
+			libucrt.lib)
 	else()
 		message(WARNING "Visual Studio Clang for ARM64 not found, falling back to pure C++ implementation")
 		# For MSVC on ARM64 without Clang, use fallback
