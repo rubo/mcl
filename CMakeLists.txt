@@ -182,12 +182,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	if(VS_CLANG)
 		message("Found VS Clang for ARM64: ${VS_CLANG}")
 		
-		# Override C++ compilation to use Clang for ARM64 Windows (like mklib_arm64.bat)
-		# Don't change CMAKE_CXX_COMPILER as it's too late, instead override target properties
+		# Use Clang for ALL compilation on ARM64 Windows (exactly like mklib_arm64.bat)
 		
-		# Compile LLVM files with Clang (following mklib_arm64.bat approach)
+		# Compile LLVM files with Clang
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
 		
 		# Don't set MCL_USE_LLVM or MCL_BINT_ASM_X64 - let defaults handle it
 		# This matches mklib_arm64.bat which compiles without these definitions
@@ -200,24 +200,25 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
+		# Compile fp.cpp with Clang (like mklib_arm64.bat)
+		add_custom_command(OUTPUT ${FP_OBJ}
+			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
+		
 		add_custom_target(gen_bint.o SOURCES ${BINT_OBJ})
 		add_custom_target(gen_base.o SOURCES ${BASE_OBJ})
+		add_custom_target(gen_fp.o SOURCES ${FP_OBJ})
 		
-		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ})
-		add_dependencies(mcl gen_bint.o gen_base.o)
-		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ})
-		add_dependencies(mcl_st gen_bint.o gen_base.o)
-		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ})
+		# Remove the original C++ sources and use our compiled objects
+		set_target_properties(mcl PROPERTIES SOURCES "")
+		set_target_properties(mcl_st PROPERTIES SOURCES "")
 		
-		# Use Clang for C++ compilation too (like mklib_arm64.bat does)
-		set_target_properties(mcl PROPERTIES
-			CXX_COMPILER_LAUNCHER "${VS_CLANG}")
-		set_target_properties(mcl_st PROPERTIES  
-			CXX_COMPILER_LAUNCHER "${VS_CLANG}")
-		
-		# Set Clang-specific flags for C++ compilation
-		target_compile_options(mcl PRIVATE --target=arm64-pc-windows-msvc)
-		target_compile_options(mcl_st PRIVATE --target=arm64-pc-windows-msvc)
+		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
+		add_dependencies(mcl gen_bint.o gen_base.o gen_fp.o)
+		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
+		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
+		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		
 		# Find and link Clang runtime library for ARM64
 		file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
