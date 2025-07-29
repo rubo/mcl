@@ -182,9 +182,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	if(VS_CLANG)
 		message("Found VS Clang for ARM64: ${VS_CLANG}")
 		
-		# Set Clang as the C++ compiler for ARM64 Windows (like mklib_arm64.bat)
-		set(CMAKE_CXX_COMPILER ${VS_CLANG})
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --target=arm64-pc-windows-msvc")
+		# Override C++ compilation to use Clang for ARM64 Windows (like mklib_arm64.bat)
+		# Don't change CMAKE_CXX_COMPILER as it's too late, instead override target properties
 		
 		# Compile LLVM files with Clang (following mklib_arm64.bat approach)
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
@@ -209,6 +208,16 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ})
 		add_dependencies(mcl_st gen_bint.o gen_base.o)
 		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ})
+		
+		# Use Clang for C++ compilation too (like mklib_arm64.bat does)
+		set_target_properties(mcl PROPERTIES
+			CXX_COMPILER_LAUNCHER "${VS_CLANG}")
+		set_target_properties(mcl_st PROPERTIES  
+			CXX_COMPILER_LAUNCHER "${VS_CLANG}")
+		
+		# Set Clang-specific flags for C++ compilation
+		target_compile_options(mcl PRIVATE --target=arm64-pc-windows-msvc)
+		target_compile_options(mcl_st PRIVATE --target=arm64-pc-windows-msvc)
 		
 		# Find and link Clang runtime library for ARM64
 		file(GLOB VS_CLANG_RT_DIR "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
