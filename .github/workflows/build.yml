@@ -13,7 +13,7 @@ jobs:
     name: Windows build
     strategy:
       matrix:
-        arch: [x64]
+        arch: [arm64]
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     steps:
       - name: Check out repository
@@ -21,14 +21,8 @@ jobs:
 
       - name: Build
         run: |
-          "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsamd64_arm64.bat"
-          cmake -S . -B build -G "Ninja" `
-            -DCMAKE_SYSTEM_NAME=Windows `
-            -DCMAKE_SYSTEM_PROCESSOR=ARM64 `
-            -DCMAKE_C_COMPILER="${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin\clang-cl.exe" `
-            -DCMAKE_CXX_COMPILER="${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin\clang-cl.exe" `
-            -DCMAKE_C_FLAGS="--target=arm64-windows" `
-            -DCMAKE_CXX_FLAGS="--target=arm64-windows"
+          "${env:ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsarm64.bat"
+          cmake -S . -B build -G "Ninja" -DMCL_MSM=0 
           cmake --build build --config Release
 
       - name: Upload artifact
