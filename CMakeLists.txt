@@ -168,7 +168,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# ARM64 Windows - use Clang from Visual Studio for LLVM compilation
+	# ARM64 Windows - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
 	# Find the Visual Studio Clang for ARM64
 	find_program(VS_CLANG clang++.exe 
 		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
@@ -181,6 +181,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	
 	if(VS_CLANG)
 		message("Found VS Clang for ARM64: ${VS_CLANG}")
+		
+		# Set Clang as the C++ compiler for ARM64 Windows (like mklib_arm64.bat)
+		set(CMAKE_CXX_COMPILER ${VS_CLANG})
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --target=arm64-pc-windows-msvc")
 		
 		# Compile LLVM files with Clang (following mklib_arm64.bat approach)
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
