@@ -83,9 +83,6 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Enterprise/VC/Tools/Llvm/ARM64/bin"
 		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/ARM64/bin"
 		      "$ENV{ProgramFiles}/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/2019/Community/VC/Tools/Llvm/ARM64/bin"
 		NO_DEFAULT_PATH)
 	if(VS_CLANG)
 		set(ARM64_WINDOWS_CLANG TRUE)
@@ -105,7 +102,6 @@ else()
 	add_library(mcl SHARED src/fp.cpp)
 	add_library(mcl_st STATIC src/fp.cpp)
 endif()
-
 add_library(mcl::mcl ALIAS mcl)
 target_include_directories(mcl PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -198,15 +194,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	# ARM64 Windows - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
 	if(ARM64_WINDOWS_CLANG)
-		# Use Clang for ALL compilation on ARM64 Windows (exactly like mklib_arm64.bat)
-		
 		# Compile LLVM files with Clang
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
-		
-		# Don't set MCL_USE_LLVM or MCL_BINT_ASM_X64 - let defaults handle it
-		# This matches mklib_arm64.bat which compiles without these definitions
 		
 		add_custom_command(OUTPUT ${BINT_OBJ}
 			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG
@@ -268,7 +259,6 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 			libucrt.lib)
 	else()
 		message(WARNING "Visual Studio Clang for ARM64 not found, falling back to pure C++ implementation")
-		# For MSVC on ARM64 without Clang, use fallback
 		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=0)
 		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=0)
 		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
