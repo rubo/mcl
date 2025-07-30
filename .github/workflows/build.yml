@@ -13,7 +13,7 @@ jobs:
     name: Windows build
     strategy:
       matrix:
-        arch: [x64]
+        arch: [arm64, x64]
     runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     steps:
       - name: Check out repository
@@ -22,7 +22,7 @@ jobs:
       - name: Build
         run: |
 
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SHARED_LINKER_FLAGS="/Brepro"
+          cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.arch }} -DCMAKE_SHARED_LINKER_FLAGS="/Brepro"
           cmake --build build --config Release
 
       - name: Upload artifact
