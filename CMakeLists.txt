@@ -139,22 +139,22 @@ if(WINDOWS_ARM64_NATIVE)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
 
 	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /Brepro /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd /Brepro")
 	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Brepro /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd /Brepro")
 	endif()
 
 	set(MCL_COMPILE_OPTIONS /W4)
 
 elseif(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /Brepro /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd /Brepro")
 	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Brepro /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd /Brepro")
 	endif()
 
 	target_compile_definitions(mcl PUBLIC NOMINMAX)
@@ -226,11 +226,11 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
 		
 		add_custom_command(OUTPUT ${BINT_OBJ}
-			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG
+			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG
+			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		# Compile fp.cpp with Clang (like mklib_arm64.bat)
@@ -301,7 +301,7 @@ else()
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 
 	add_custom_command(OUTPUT ${BINT_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
@@ -337,7 +337,7 @@ elseif(${MCL_USE_LLVM})
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
