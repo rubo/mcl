@@ -173,7 +173,7 @@ if (${MCL_USE_GMP})
 endif()
 
 if (${MCL_STANDALONE})
-	set(MCL_COMPILE_OPTIONS ${MCL_COMPILE_OPTIONS} ${MCL_CFLAGS_STANDALONE})
+	list(APPEND MCL_COMPILE_OPTIONS ${MCL_CFLAGS_STANDALONE})
 endif()
 
 if(MCL_COMPILE_OPTIONS)
@@ -347,7 +347,6 @@ elseif(${MCL_USE_LLVM})
 	add_dependencies(mcl_st gen_base.o)
 	target_sources(mcl_st PRIVATE ${BASE_OBJ})
 endif()
-endif()
 
 # use src/msm_avx.cpp on x64
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
@@ -419,14 +418,6 @@ if(MCL_TEST_WITH_GMP)
 	endif()
 endif()
 
-install(TARGETS mcl mcl_st
-	EXPORT mclTargets
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
-	RUNTIME DESTINATION lib)
-	if(TARGET mcl_dll)
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll
-			DESTINATION bin)
 install(TARGETS mcl mcl_st
 	EXPORT mclTargets
 	LIBRARY DESTINATION lib
