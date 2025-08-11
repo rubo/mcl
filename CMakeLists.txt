@@ -78,7 +78,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Check if we need special ARM64 Windows handling first
+# Check if we need special Windows ARM64 handling first
 set(ARM64_WINDOWS_CLANG FALSE)
 if(WINDOWS_ARM64_NATIVE)
 	# Find Visual Studio installation dynamically
@@ -97,7 +97,7 @@ if(WINDOWS_ARM64_NATIVE)
 endif()
 
 if(ARM64_WINDOWS_CLANG)
-	# For ARM64 Windows with Clang, create empty targets and add objects later
+	# For Windows ARM64 with Clang, create empty targets and add objects later
 	add_library(mcl SHARED)
 	add_library(mcl_st STATIC)
 	# Set the linker language explicitly since we have no initial sources
@@ -218,7 +218,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# ARM64 Windows - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
+	# Windows ARM64 - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
 	if(ARM64_WINDOWS_CLANG)
 		# Compile LLVM files with Clang
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
@@ -273,7 +273,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 			endif()
 		endif()
 		
-		# Add necessary Windows system libraries for ARM64 Clang builds
+		# Add necessary Windows system libraries for Clang ARM64 builds
 		target_link_libraries(mcl PUBLIC 
 			kernel32.lib 
 			msvcrt.lib
@@ -323,8 +323,8 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# ARM64 Windows base compilation is handled above with bint compilation
-	message("ARM64 Windows base compilation handled with bint compilation")
+	# Windows ARM64 base compilation is handled above with bint compilation
+	message("Windows ARM64 base compilation handled with bint compilation")
 elseif(X86_64_LINUX)
 	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
