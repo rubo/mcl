@@ -114,18 +114,17 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Check if we need special Windows ARM64 handling first
 set(ARM64_WINDOWS_CLANG FALSE)
 if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
-	# Find Visual Studio installation dynamically
-	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
-	find_program(VS_CLANG clang++.exe 
-		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin")
-	if(VS_CLANG)
-		set(ARM64_WINDOWS_CLANG TRUE)
-		message("Found VS Clang for ARM64: ${VS_CLANG}")
+	# Use shared Visual Studio detection module for consistent VS path handling
+	if(NOT ARM64_CROSS)  # Only run this for native builds, cross builds use toolchain
+		include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindVisualStudio.cmake")
+		setup_visual_studio_environment()
+		
+		# Check if ARM64 Clang tools are available
+		if(EXISTS "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
+			set(ARM64_WINDOWS_CLANG TRUE)
+			set(VS_CLANG "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
+			message("Found VS Clang for ARM64: ${VS_CLANG}")
+		endif()
 	endif()
 endif()
 
@@ -314,17 +313,24 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
 		
+		# Set target flag for cross-compilation only
+		if(WINDOWS_ARM64_CROSS)
+			set(CLANG_TARGET_ARGS "--target=arm64-pc-windows-msvc")
+		else()
+			set(CLANG_TARGET_ARGS "")  # Native ARM64 build doesn't need target flag
+		endif()
+		
 		add_custom_command(OUTPUT ${BINT_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
+			COMMAND ${ARM64_COMPILER} ${CLANG_TARGET_ARGS} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
+			COMMAND ${ARM64_COMPILER} ${CLANG_TARGET_ARGS} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		# Compile fp.cpp with Clang (like mklib_arm64.bat)
 		add_custom_command(OUTPUT ${FP_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX -DMCL_BINT_ASM_X64=0
+			COMMAND ${ARM64_COMPILER} ${CLANG_TARGET_ARGS} -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX -DMCL_BINT_ASM_X64=0
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
 		

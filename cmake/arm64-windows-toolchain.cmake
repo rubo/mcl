@@ -5,36 +5,9 @@ set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR ARM64)
 set(CMAKE_CROSSCOMPILING TRUE)
 
-# Find Visual Studio installation path
-execute_process(
-    COMMAND cmd /c "for /f \"usebackq tokens=*\" %i in (`\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do @echo %i"
-    OUTPUT_VARIABLE VS_PATH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE VS_RESULT
-    ERROR_QUIET
-)
-
-if(NOT VS_RESULT EQUAL 0 OR NOT VS_PATH)
-    # Fallback: try common paths
-    set(VS_COMMON_PATHS
-        "C:/Program Files/Microsoft Visual Studio/2022/Professional"
-        "C:/Program Files/Microsoft Visual Studio/2022/Community"
-        "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
-        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional"
-        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community"
-    )
-
-    foreach(VS_TEST_PATH ${VS_COMMON_PATHS})
-        if(EXISTS "${VS_TEST_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
-            set(VS_PATH "${VS_TEST_PATH}")
-            break()
-        endif()
-    endforeach()
-endif()
-
-if(NOT VS_PATH OR NOT EXISTS "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
-    message(FATAL_ERROR "Visual Studio with LLVM x64 tools not found. Please install Visual Studio with C++ LLVM tools.")
-endif()
+# Use shared Visual Studio detection module
+include("${CMAKE_CURRENT_LIST_DIR}/FindVisualStudio.cmake")
+setup_visual_studio_environment()
 
 # Set compilers - use clang-cl for MSVC compatibility
 set(CMAKE_C_COMPILER "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
@@ -46,19 +19,9 @@ set(CMAKE_CXX_COMPILER_ID "Clang")
 set(CMAKE_C_SIMULATE_ID "MSVC")
 set(CMAKE_CXX_SIMULATE_ID "MSVC")
 
-# Find MSVC version for cross-tools
-file(GLOB MSVC_VERSION_DIRS "${VS_PATH}/VC/Tools/MSVC/*")
-if(MSVC_VERSION_DIRS)
-    # Get the latest version
-    list(SORT MSVC_VERSION_DIRS)
-    list(REVERSE MSVC_VERSION_DIRS)
-    list(GET MSVC_VERSION_DIRS 0 MSVC_VERSION_DIR)
-    get_filename_component(MSVC_VERSION ${MSVC_VERSION_DIR} NAME)
-
-    # Set lib.exe and link.exe for ARM64 target (HostX64/ARM64)
-    set(CMAKE_AR "${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION}/bin/HostX64/ARM64/lib.exe")
-    set(CMAKE_LINKER "${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION}/bin/HostX64/ARM64/link.exe")
-endif()
+# Set lib.exe and link.exe for ARM64 target (HostX64/ARM64) - MSVC_VERSION is set by shared module
+set(CMAKE_AR "${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION}/bin/HostX64/ARM64/lib.exe")
+set(CMAKE_LINKER "${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION}/bin/HostX64/ARM64/link.exe")
 
 # Find clang runtime library path (use ARM64 version, not x64)
 # This matches setvar_arm64.bat logic
@@ -117,9 +80,7 @@ set(CMAKE_CXX_FLAGS_INIT "${ARM64_COMPILE_FLAGS_STR}")
 # For shared libraries, we need special handling in CMakeLists.txt
 # Static libraries will use lib.exe automatically
 
-# Cache variables for use in main CMakeLists.txt
-set(VS_PATH_CACHE "${VS_PATH}" CACHE INTERNAL "Visual Studio Path")
-set(MSVC_VERSION_CACHE "${MSVC_VERSION}" CACHE INTERNAL "MSVC Version")
+# Cache additional variables for use in main CMakeLists.txt
 set(CLANG_RT_PATH_CACHE "${CLANG_RT_PATH}" CACHE INTERNAL "Clang Runtime Path")
 set(WindowsSdkDir_CACHE "${WindowsSdkDir}" CACHE INTERNAL "Windows SDK Directory")
 set(WindowsSDKVersion_CACHE "${WindowsSDKVersion}" CACHE INTERNAL "Windows SDK Version")
