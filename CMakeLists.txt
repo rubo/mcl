@@ -190,6 +190,12 @@ elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 
 	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
+	
+	# For ARM64 with Clang, enable uint128_t support which avoids _udiv128
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		target_compile_definitions(mcl PUBLIC MCL_DEFINED_UINT128_T)
+		target_compile_definitions(mcl_st PUBLIC MCL_DEFINED_UINT128_T)
+	endif()
 
 	if(MCL_MSVC_RUNTIME_DLL)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /DNDEBUG")
