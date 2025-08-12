@@ -113,7 +113,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Check if we need special Windows ARM64 handling first
 set(ARM64_WINDOWS_CLANG FALSE)
-if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
+if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
 	# Find Visual Studio installation dynamically
 	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
 	find_program(VS_CLANG clang++.exe 
@@ -129,8 +129,8 @@ if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 	endif()
 endif()
 
-if(ARM64_WINDOWS_CLANG)
-	# For Windows ARM64 with Clang, create empty targets and add objects later
+if(ARM64_WINDOWS_CLANG OR ARM64_CROSS)
+	# For Windows ARM64 with Clang or ARM64 cross-compilation, create empty targets and add objects later
 	add_library(mcl SHARED)
 	add_library(mcl_st STATIC)
 	# Set the linker language explicitly since we have no initial sources
