@@ -129,13 +129,16 @@ if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
 	endif()
 endif()
 
-if(ARM64_WINDOWS_CLANG OR ARM64_CROSS)
-	# For Windows ARM64 with Clang or ARM64 cross-compilation, create empty targets and add objects later
-	add_library(mcl SHARED)
-	add_library(mcl_st STATIC)
-	# Set the linker language explicitly since we have no initial sources
-	set_target_properties(mcl PROPERTIES LINKER_LANGUAGE CXX)
-	set_target_properties(mcl_st PROPERTIES LINKER_LANGUAGE CXX)
+if(ARM64_CROSS)
+	# For ARM64 cross-compilation, we'll create custom targets instead of standard CMake targets
+	# Create dummy targets that will be excluded from ALL but provide the interface
+	add_library(mcl SHARED src/fp.cpp)
+	add_library(mcl_st STATIC src/fp.cpp)
+	# These will be excluded from the build later and replaced with custom commands
+elseif(ARM64_WINDOWS_CLANG)
+	# For Windows ARM64 with Clang, create targets with source and add objects later
+	add_library(mcl SHARED src/fp.cpp)
+	add_library(mcl_st STATIC src/fp.cpp)
 else()
 	# For other platforms, create targets with normal sources
 	add_library(mcl SHARED src/fp.cpp)
