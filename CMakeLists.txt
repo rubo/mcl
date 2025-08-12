@@ -136,9 +136,12 @@ if(ARM64_CROSS)
 	add_library(mcl_st STATIC src/fp.cpp)
 	# These will be excluded from the build later and replaced with custom commands
 elseif(ARM64_WINDOWS_CLANG)
-	# For Windows ARM64 with Clang, create targets with source and add objects later
-	add_library(mcl SHARED src/fp.cpp)
-	add_library(mcl_st STATIC src/fp.cpp)
+	# For Windows ARM64 with Clang, create empty targets and add objects later
+	add_library(mcl SHARED)
+	add_library(mcl_st STATIC)
+	# Set the linker language explicitly since we have no initial sources
+	set_target_properties(mcl PROPERTIES LINKER_LANGUAGE CXX)
+	set_target_properties(mcl_st PROPERTIES LINKER_LANGUAGE CXX)
 else()
 	# For other platforms, create targets with normal sources
 	add_library(mcl SHARED src/fp.cpp)
