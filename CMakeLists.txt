@@ -190,10 +190,6 @@ elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 
 	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
-	
-	# Disable assembly optimizations for ARM64 to use pure C++ fallbacks
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 
 	if(MCL_MSVC_RUNTIME_DLL)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /DNDEBUG")
@@ -325,7 +321,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		
 		# Compile fp.cpp with Clang (like mklib_arm64.bat)
 		add_custom_command(OUTPUT ${FP_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX
+			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX -DMCL_BINT_ASM_X64=0
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
 		
