@@ -30,10 +30,16 @@ else()
 	set(MCL_TEST_WITH_GMP_DEFAULT ON)
 endif()
 
-# Windows ARM64 native build detection
+# Windows ARM64 build detection (native or cross-compilation)
 if(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
-    set(WINDOWS_ARM64_NATIVE TRUE)
-    message(STATUS "Windows ARM64 native build detected")
+    # Check if this is truly a native build or cross-compilation
+    if(CMAKE_CROSSCOMPILING)
+        set(WINDOWS_ARM64_CROSS TRUE)
+        message(STATUS "Windows ARM64 cross-compilation build detected")
+    else()
+        set(WINDOWS_ARM64_NATIVE TRUE)
+        message(STATUS "Windows ARM64 native build detected")
+    endif()
     # Disable GMP for ARM64 builds
     set(MCL_TEST_WITH_GMP_DEFAULT OFF)
 endif()
@@ -80,7 +86,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Check if we need special Windows ARM64 handling first
 set(ARM64_WINDOWS_CLANG FALSE)
-if(WINDOWS_ARM64_NATIVE)
+if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 	# Find Visual Studio installation dynamically
 	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
 	find_program(VS_CLANG clang++.exe 
@@ -131,9 +137,13 @@ target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_
 target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
 
 # Compiler and linker settings
-if(WINDOWS_ARM64_NATIVE)
-	# Windows ARM64 native build settings
-	message(STATUS "Configuring Windows ARM64 native build")
+if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
+	# Windows ARM64 build settings (native or cross-compilation)
+	if(WINDOWS_ARM64_NATIVE)
+		message(STATUS "Configuring Windows ARM64 native build")
+	else()
+		message(STATUS "Configuring Windows ARM64 cross-compilation build")
+	endif()
 
 	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
@@ -228,22 +238,33 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	# Windows ARM64 - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
 	if(ARM64_WINDOWS_CLANG)
-		# Compile LLVM files with Clang
+		# Determine which compiler to use based on build type
+		if(WINDOWS_ARM64_CROSS)
+			# For cross-compilation, use the toolchain's compiler
+			set(ARM64_COMPILER ${CMAKE_CXX_COMPILER})
+			message(STATUS "Using cross-compilation compiler: ${ARM64_COMPILER}")
+		else()
+			# For native builds, use the found VS Clang
+			set(ARM64_COMPILER ${VS_CLANG})
+			message(STATUS "Using native ARM64 compiler: ${ARM64_COMPILER}")
+		endif()
+		
+		# Compile LLVM files with appropriate Clang
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
 		
 		add_custom_command(OUTPUT ${BINT_OBJ}
-			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
+			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
+			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		
 		# Compile fp.cpp with Clang (like mklib_arm64.bat)
 		add_custom_command(OUTPUT ${FP_OBJ}
-			COMMAND ${VS_CLANG} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX
+			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
 		
@@ -388,7 +409,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 endif()
 
 if(MCL_TEST_WITH_GMP)
-	if(NOT MSVC AND NOT WINDOWS_ARM64_NATIVE)
+	if(NOT MSVC AND NOT WINDOWS_ARM64_NATIVE AND NOT WINDOWS_ARM64_CROSS)
 		find_package(GMP REQUIRED)
 	else()
 		set(CYBOZULIB_EXT_DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/cybozulib_ext)
