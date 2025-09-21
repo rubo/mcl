@@ -7,7 +7,7 @@ option(MCL_LINK_DIR "Absolute path where mcl static or dynamic library resides")
 
 option(GMP_LINK_DIR "Absolute path where GMP static or dynamic library resides")
 
-option(MCL_USE_XBYAK "Use the XBYAK JIT Assembler" ON)
+option(MCL_USE_XBYAK "Use the XBYAK JIT Assembler" OFF)
 
 # Windows linkage problem, see https://stackoverflow.com/a/68375079/13719349
 if(MSVC)
